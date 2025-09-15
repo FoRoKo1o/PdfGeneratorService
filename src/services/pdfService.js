@@ -3,7 +3,7 @@ import path from "path";
 import { exec } from "child_process";
 import { v4 as uuidv4 } from "uuid";
 import { copyImagesToTmp } from "./imageService.js";
-import { jsonToHtml } from "../utils/jsonToHtml.js";
+import { jsonToPandocHtml } from "../utils/jsonToHtml.js";
 
 function cleanupTmpFiles(files) {
     files.forEach(file => {
@@ -23,31 +23,43 @@ export function generatePdf(blocks, options, res) {
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
     const htmlPath = path.join(tmpDir, `${id}.html`);
+    const odtPath = path.join(tmpDir, `${id}.odt`);
     const pdfPath = path.join(tmpDir, `${id}.pdf`);
 
     const fixedBlocks = copyImagesToTmp(blocks, tmpDir);
-    const html = jsonToHtml(fixedBlocks, options);
+    const html = jsonToPandocHtml(fixedBlocks, options);
 
     fs.writeFileSync(htmlPath, html);
 
+    // 1. HTML -> ODT przez Pandoc
     exec(
-        `soffice --headless --convert-to pdf:writer_pdf_Export --outdir "${tmpDir}" "${htmlPath}"`,
+        `pandoc "${htmlPath}" --reference-doc=src/services/template.odt -o "${odtPath}"`,
         (err) => {
             if (err) {
-                console.error("PDF conversion error:", err);
-                return res.status(500).send("PDF conversion failed");
+                console.error("Pandoc ODT conversion error:", err);
+                return res.status(500).send("ODT conversion failed");
             }
-            // Collect all temp files to clean up
-            const tmpFiles = [htmlPath, pdfPath];
-            fixedBlocks.forEach(b => {
-                if (b.type === "image") {
-                    const imgPath = path.join(tmpDir, b.src);
-                    tmpFiles.push(imgPath);
+            // 2. ODT -> PDF przez LibreOffice
+            exec(
+                `soffice --headless --convert-to pdf:writer_pdf_Export --outdir "${tmpDir}" "${odtPath}"`,
+                (err2) => {
+                    if (err2) {
+                        console.error("PDF conversion error:", err2);
+                        return res.status(500).send("PDF conversion failed");
+                    }
+                    // Clean up and send PDF
+                    const tmpFiles = [htmlPath, odtPath, pdfPath];
+                    fixedBlocks.forEach(b => {
+                        if (b.type === "image") {
+                            const imgPath = path.join(tmpDir, b.src);
+                            tmpFiles.push(imgPath);
+                        }
+                    });
+                    res.download(pdfPath, "document.pdf", () => {
+                        // cleanupTmpFiles(tmpFiles);
+                    });
                 }
-            });
-            res.download(pdfPath, "document.pdf", () => {
-                cleanupTmpFiles(tmpFiles);
-            });
+            );
         }
     );
 }
