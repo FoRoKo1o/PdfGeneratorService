@@ -2,7 +2,7 @@ import { fixOrphans} from "../fixOrphans.js";
 
 export function renderTable(block) {
     let html = `<div style="text-align: center;">
-            <table role="table" aria-label="${block.caption || "Tabela"}" 
+            <table style="CustomTableStyle" role="table" aria-label="${block.caption || "Tabela"}" 
                    style="border-collapse: collapse; border: 1px solid black; display: inline-table;">`;
     if (block.caption) html += `<caption>${fixOrphans(block.caption)}</caption>`;
     html += "<thead><tr>";

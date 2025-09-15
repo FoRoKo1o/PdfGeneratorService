@@ -57,12 +57,17 @@ function jsonToPandocHtml(blocks, options = {}) {
   }
 
   // Dodajemy blok metadanych Pandoc na górze HTML
-  let html = `--- 
+
+/* - metadata are not working with .html input
+
+--- 
 title: "${title}"
 subtitle: "${HeaderText}"
 footer: "${footer}"
 lang: "${lang}"
 ---
+*/
+  let html = `
 <!DOCTYPE html>
 <html lang="${lang}">
 <head>

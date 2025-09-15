@@ -374,7 +374,6 @@
     "options": {
         "lang": "pl",
         "title": "Testowy dokument PDF – wszystkie funkcjonalności",
-        "HeaderText": "Nagłówek z JSONA",
-        "footer": "Stopka dynamiczna"
+        "author": "TEST"
     }
 }

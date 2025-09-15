@@ -3,7 +3,7 @@ import path from "path";
 import { exec } from "child_process";
 import { v4 as uuidv4 } from "uuid";
 import { copyImagesToTmp } from "./imageService.js";
-import { jsonToPandocHtml } from "../utils/jsonToHtml.js";
+import { jsonToPandocMarkdown } from "../utils/jsonToMarkdown.js";
 
 function cleanupTmpFiles(files) {
     files.forEach(file => {
@@ -14,6 +14,7 @@ function cleanupTmpFiles(files) {
         }
     });
 }
+
 /**
  * Generates a PDF from blocks and options, sends it via Express response.
  */
@@ -22,18 +23,27 @@ export function generatePdf(blocks, options, res) {
     const tmpDir = path.join(process.cwd(), "tmp");
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
-    const htmlPath = path.join(tmpDir, `${id}.html`);
+    const mdPath = path.join(tmpDir, `${id}.md`);
     const odtPath = path.join(tmpDir, `${id}.odt`);
     const pdfPath = path.join(tmpDir, `${id}.pdf`);
 
+    // Copy images and update src to filename only
     const fixedBlocks = copyImagesToTmp(blocks, tmpDir);
-    const html = jsonToPandocHtml(fixedBlocks, options);
+    // Update image src to filename only for Markdown
+    fixedBlocks.forEach(block => {
+        if (block.type === "image" && block.src) {
+            block.src = path.basename(block.src);
+        }
+    });
 
-    fs.writeFileSync(htmlPath, html);
+    const md = jsonToPandocMarkdown(fixedBlocks, options);
 
-    // 1. HTML -> ODT przez Pandoc
+    fs.writeFileSync(mdPath, md);
+
+    // 1. Markdown -> ODT przez Pandoc
     exec(
-        `pandoc "${htmlPath}" --reference-doc=src/services/template.odt -o "${odtPath}"`,
+        `pandoc "${mdPath}" --reference-doc=../templates/template.odt --wrap=preserve -o "${odtPath}"`,
+        { cwd: tmpDir },
         (err) => {
             if (err) {
                 console.error("Pandoc ODT conversion error:", err);
@@ -42,13 +52,14 @@ export function generatePdf(blocks, options, res) {
             // 2. ODT -> PDF przez LibreOffice
             exec(
                 `soffice --headless --convert-to pdf:writer_pdf_Export --outdir "${tmpDir}" "${odtPath}"`,
+                { cwd: tmpDir },
                 (err2) => {
                     if (err2) {
                         console.error("PDF conversion error:", err2);
                         return res.status(500).send("PDF conversion failed");
                     }
                     // Clean up and send PDF
-                    const tmpFiles = [htmlPath, odtPath, pdfPath];
+                    const tmpFiles = [mdPath, odtPath, pdfPath];
                     fixedBlocks.forEach(b => {
                         if (b.type === "image") {
                             const imgPath = path.join(tmpDir, b.src);
