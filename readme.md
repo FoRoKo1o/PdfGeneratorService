@@ -187,3 +187,35 @@ Below are all supported block types with example data.
 ## Example Input
 
 See [`sample.json`](sample.json) for a full example.
+
+
+
+
+nano ~/.config/libreoffice/4/user/basic/Standard/Module1.xba
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">Sub UpdateTOC()
+    &apos; Pobierz wszystkie indeksy (spis treści)
+    Dim oIndexes As Object
+    oIndexes = ThisComponent.getDocumentIndexes()
+
+    &apos; Przejdź przez wszystkie indeksy i zaktualizuj każdy
+    For i = 0 To oIndexes.getCount() - 1
+        Dim oIndex As Object
+        oIndex = oIndexes.getByIndex(i)
+        If oIndex.supportsService(&quot;com.sun.star.text.ContentIndex&quot;) Then
+            oIndex.update()  &apos; Zaktualizuj spis treści
+        End If
+    Next
+
+    &apos; Zapisz dokument
+    ThisComponent.store()
+    
+    &apos; Zamknij dokument
+    ThisComponent.close(True)
+End Sub
+
+</script:module>
+```

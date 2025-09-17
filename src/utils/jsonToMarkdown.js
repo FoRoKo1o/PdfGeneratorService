@@ -6,6 +6,7 @@ function jsonToPandocMarkdown(blocks, options = {}) {
   const subtitle = options.HeaderText || "";
   const footer = options.footer || "";
   const author = options.author || "";
+  const toc = options.toc === true || options.toc === "true";
 
   let md = `---
 title: "${title}"
@@ -16,7 +17,9 @@ lang: "${lang}"
 ---
 
 `;
-
+  // if (toc) {
+  //   md += '[TOC]\n\n';
+  // }
   blocks.forEach((block, idx) => {
     switch (block.type) {
       case "heading":
@@ -41,11 +44,19 @@ lang: "${lang}"
         md += "\n";
         break;
       case "image":
-        // Only use the filename, as images are copied to tmpDir
-        md += `\n::: {.ObrazWysrodkowany}\n`;
+      // Only use the filename, as images are copied to tmpDir
+      // md += `\n::: {.ObrazWysrodkowany}\n`;
+      // md += `![${block.alt || ""}](${block.src}){width=${block.width || "150"}}\n\n`;
+      // md += `*${fixOrphans(block.caption || "")}*\n`;
+      // md += `:::\n\n`;
+      case "image":
+        // md += `{.ObrazWyśrodkowany}\n`;
         md += `![${block.alt || ""}](${block.src}){width=${block.width || "150"}}\n\n`;
-        md += `*${fixOrphans(block.caption || "")}*\n`;
-        md += `:::\n\n`;
+        md += `*${fixOrphans(block.caption || "")}*\n\n`;
+        break;
+
+
+
         // md += `![${block.alt || "qweqwe"}](${block.src}){.ObrazWysrodkowany width=${block.width}}`;
         // if (block.caption) md += `*${fixOrphans(block.caption)}*\n\n`;
         break;
