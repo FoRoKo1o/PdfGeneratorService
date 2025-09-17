@@ -10,7 +10,7 @@ import config from "../config.js";
 
 function jsonToPandocHtml(blocks, options = {}) {
   const lang = options.lang || "pl";
-  const title = fixOrphans(options.title || "Dokument");
+  const title = fixOrphans(options.title || "");
   const HeaderText = options.HeaderText || "";
   const footer = options.footer || "";
 
@@ -58,7 +58,7 @@ function jsonToPandocHtml(blocks, options = {}) {
 
   // Dodajemy blok metadanych Pandoc na górze HTML
 
-/* - metadata are not working with .html input
+/* - metadata are not working with .html input going to .md
 
 --- 
 title: "${title}"

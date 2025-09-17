@@ -2,7 +2,7 @@ const config = {
     tmpDir: "tmp",
     publicDir: "public",
     port: process.env.PORT || 3000,
-    generalPdfInfo: {
+    generalPdfInfo: { //old config files used when generating PDF from .html
         tocAriaLabel: "Spis treści",
         tocText: "Spis treści",
         bannerAriaLabel: "Nagłówek dokumentu",

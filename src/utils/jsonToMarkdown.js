@@ -1,79 +1,47 @@
 import { fixOrphans } from "./fixOrphans.js";
+import { generateImage } from "./RenderMdBlock/generateImage.js";
+import { generateList } from "./RenderMdBlock/generateList.js";
+import { generateParagraph } from "./RenderMdBlock/generateParagraph.js";
+import { generateQuote } from "./RenderMdBlock/generateQuote.js";
+import { generateTable } from "./RenderMdBlock/generateTable.js";
+import { generateHeading } from "./RenderMdBlock/generateHeading.js";
+import { generateLink } from "./RenderMdBlock/generateLink.js";
 
 function jsonToPandocMarkdown(blocks, options = {}) {
   const lang = options.lang || "pl";
-  const title = fixOrphans(options.title || "Dokument");
-  const subtitle = options.HeaderText || "";
-  const footer = options.footer || "";
+  const title = fixOrphans(options.title || "");
+  const subtitle = options.subtitle || "";
   const author = options.author || "";
-  const toc = options.toc === true || options.toc === "true";
 
-  let md = `---
-title: "${title}"
-subtitle: "${subtitle}"
-footer: "${footer}"
-author: "${author}"
-lang: "${lang}"
----
+  let md = `---\ntitle: "${title}"\nsubtitle: "${subtitle}"\nauthor: "${author}"\nlang: "${lang}"\n---\n\n`;
 
-`;
-  // if (toc) {
-  //   md += '[TOC]\n\n';
-  // }
   blocks.forEach((block, idx) => {
+    const nextBlock = blocks[idx + 1];
+
     switch (block.type) {
       case "heading":
-        md += `${"#".repeat(block.level || 1)} ${fixOrphans(block.content)}\n\n`;
+        md += generateHeading(block);
         break;
       case "whitespace":
         md += "\n";
         break;
       case "paragraph":
-        md += `${fixOrphans(block.content)}\n\n`;
+        md += generateParagraph(block, nextBlock);
         break;
       case "list":
-        if (block.ordered) {
-          block.items.forEach((item, i) => {
-            md += `${i + 1}. ${fixOrphans(item)}\n`;
-          });
-        } else {
-          block.items.forEach(item => {
-            md += `- ${fixOrphans(item)}\n`;
-          });
-        }
-        md += "\n";
+        md += generateList(block);
         break;
       case "image":
-      // Only use the filename, as images are copied to tmpDir
-      // md += `\n::: {.ObrazWysrodkowany}\n`;
-      // md += `![${block.alt || ""}](${block.src}){width=${block.width || "150"}}\n\n`;
-      // md += `*${fixOrphans(block.caption || "")}*\n`;
-      // md += `:::\n\n`;
-      case "image":
-        // md += `{.ObrazWyśrodkowany}\n`;
-        md += `![${block.alt || ""}](${block.src}){width=${block.width || "150"}}\n\n`;
-        md += `*${fixOrphans(block.caption || "")}*\n\n`;
-        break;
-
-
-
-        // md += `![${block.alt || "qweqwe"}](${block.src}){.ObrazWysrodkowany width=${block.width}}`;
-        // if (block.caption) md += `*${fixOrphans(block.caption)}*\n\n`;
+        md += generateImage(block);
         break;
       case "table":
-        md += block.headers.join(" | ") + "\n";
-        md += block.headers.map(() => "---").join(" | ") + "\n";
-        block.rows.forEach(row => {
-          md += row.join(" | ") + "\n";
-        });
-        md += "\n";
-        if (block.caption) md += `*${fixOrphans(block.caption)}*\n\n`;
-        if (block["caption-bottom"]) md += `_${fixOrphans(block["caption-bottom"])}_\n\n`;
+        md += generateTable(block);
         break;
       case "quote":
-        md += `> ${fixOrphans(block.content)}\n`;
-        if (block.cite) md += `> — ${fixOrphans(block.cite)}\n`;
-        md += "\n";
+        md += generateQuote(block);
+        break;
+      case "link":
+        md += generateLink(block, nextBlock);
         break;
       default:
         break;
@@ -82,5 +50,6 @@ lang: "${lang}"
 
   return md;
 }
+
 
 export { jsonToPandocMarkdown };

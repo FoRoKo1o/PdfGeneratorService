@@ -1,15 +1,79 @@
 # PDF Generator Service
 
-A simple Node.js service for generating PDFs from structured JSON input using Express and LibreOffice.
+A "simple" Node.js service for generating PDFs from structured JSON input using Pandoc, Express and LibreOffice.
 
+`JSON > .MD + .ODT > .ODT + VBA > PDF`
 ## Features
 
 - Generate PDFs from JSON describing document structure
-- Supports headings, paragraphs, lists, whitespace, images, tables, and quotes
+- Supports headings, paragraphs, lists, whitespace, images, tables, links and quotes
 - Polish typographic orphans fixing
 - Docker-ready
 
+### Update:
+
+- The HTML feature is now deprecated and has been replaced by Markdown. This change allows better control over headers and footers.
+- The HTML feature is still superior for formatting images (currently, it’s unclear how to style images using Markdown).
+
 ## Usage
+
+### 0. Requred step
+
+Create macro inside LibreOffice
+
+```vb
+Sub UpdateTOC()
+    ' Pobierz wszystkie indeksy (spis treści)
+    Dim oIndexes As Object
+    oIndexes = ThisComponent.getDocumentIndexes()
+
+    ' Przejdź przez wszystkie indeksy i zaktualizuj każdy
+    For i = 0 To oIndexes.getCount() - 1
+        Dim oIndex As Object
+        oIndex = oIndexes.getByIndex(i)
+        If oIndex.supportsService("com.sun.star.text.ContentIndex") Then
+            oIndex.update()  ' Zaktualizuj spis treści
+        End If
+    Next
+
+    ' Zapisz dokument
+    ThisComponent.store()
+
+    ' Zamknij dokument
+    ThisComponent.close(True)
+End Sub
+```
+
+## In case of using noGUI system
+
+`nano ~/.config/libreoffice/4/user/basic/Standard/Module1.xba`
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">Sub UpdateTOC()
+    &apos; Pobierz wszystkie indeksy (spis treści)
+    Dim oIndexes As Object
+    oIndexes = ThisComponent.getDocumentIndexes()
+
+    &apos; Przejdź przez wszystkie indeksy i zaktualizuj każdy
+    For i = 0 To oIndexes.getCount() - 1
+        Dim oIndex As Object
+        oIndex = oIndexes.getByIndex(i)
+        If oIndex.supportsService(&quot;com.sun.star.text.ContentIndex&quot;) Then
+            oIndex.update()  &apos; Zaktualizuj spis treści
+        End If
+    Next
+
+    &apos; Zapisz dokument
+    ThisComponent.store()
+    
+    &apos; Zamknij dokument
+    ThisComponent.close(True)
+End Sub
+
+</script:module>
+```
 
 ### 1. Start the Service
 
@@ -40,6 +104,17 @@ docker run -p 3000:3000 pdf-generator
 - `GET /test-generate-pdf`  
   Uses `sample.json` as input and returns a PDF.
 
+- `GET /templates`  
+  Returns a list of available template names.
+```
+{
+    "templates":
+    [
+      "template",
+      "template2"
+    ]
+}
+```
 ---
 
 ## Block Types Reference
@@ -99,7 +174,7 @@ Below are all supported block types with example data.
 
 ---
 
-### 4. Whitespace
+### 4. Whitespace - not supported
 
 ```json
 {
@@ -170,12 +245,23 @@ Below are all supported block types with example data.
 
 ---
 
+### 8. Links
+```json
+{
+    "type": "link",
+    "text": "This si example linl",
+    "url": "https://example.com"
+},
+```
+
 ## Options Reference
 
 ```json
 {
   "lang": "pl",
-  "title": "My PDF Document"
+  "title": "My PDF Document",
+  "author": "Name to be inserted as Metadata",
+  "toc": "true / false"
 }
 ```
 
@@ -187,35 +273,3 @@ Below are all supported block types with example data.
 ## Example Input
 
 See [`sample.json`](sample.json) for a full example.
-
-
-
-
-nano ~/.config/libreoffice/4/user/basic/Standard/Module1.xba
-
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
-<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Module1" script:language="StarBasic">Sub UpdateTOC()
-    &apos; Pobierz wszystkie indeksy (spis treści)
-    Dim oIndexes As Object
-    oIndexes = ThisComponent.getDocumentIndexes()
-
-    &apos; Przejdź przez wszystkie indeksy i zaktualizuj każdy
-    For i = 0 To oIndexes.getCount() - 1
-        Dim oIndex As Object
-        oIndex = oIndexes.getByIndex(i)
-        If oIndex.supportsService(&quot;com.sun.star.text.ContentIndex&quot;) Then
-            oIndex.update()  &apos; Zaktualizuj spis treści
-        End If
-    Next
-
-    &apos; Zapisz dokument
-    ThisComponent.store()
-    
-    &apos; Zamknij dokument
-    ThisComponent.close(True)
-End Sub
-
-</script:module>
-```
