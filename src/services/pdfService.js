@@ -23,15 +23,17 @@ async function generatePdfTask(blocks, options, res) {
     const mdPath = path.join(tmpDir, `${id}.md`);
     const odtPath = path.join(tmpDir, `${id}.odt`);
     const pdfPath = path.join(tmpDir, `${id}.pdf`);
-    const template = options.template || "template";
+
+    // Choose template folder
+    const templateSource = options.templateSource === "UserAdded" ? "UserAdded" : "Verified";
+    const templateName = options.templateName || "template";
+    const templatePath = path.join(process.cwd(), "templates", templateSource, `${templateName}.odt`);
 
     // Check if template exists
-    const isValidTemplate = await verifyTemplate(template);
-    if (!isValidTemplate) {
-        console.error("Invalid template provided:", template);
+    if (!fs.existsSync(templatePath)) {
+        console.error("Invalid template provided:", templatePath);
         return res.status(400).send("Invalid template.");
     }
-
 
     // Copy images and update src to filename only
     let fixedBlocks;
@@ -63,7 +65,7 @@ async function generatePdfTask(blocks, options, res) {
     // Convert Markdown to ODT via Pandoc
     try {
         const pandocTocFlag = options.toc === true || options.toc === "true" ? "--table-of-contents" : "";
-        await execPromise(`pandoc "${mdPath}"  --reference-doc=../templates/${template}.odt --wrap=preserve ${pandocTocFlag} -o "${odtPath}"`, tmpDir);
+        await execPromise(`pandoc "${mdPath}" --reference-doc="${templatePath}" --wrap=preserve ${pandocTocFlag} -o "${odtPath}"`, tmpDir);
     } catch (err) {
         console.error("Pandoc ODT conversion error:", err);
         cleanupTmpFiles();

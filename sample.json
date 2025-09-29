@@ -396,6 +396,7 @@
         "title": "Testowy dokument PDF – wszystkie funkcjonalności",
         "author": "TEST",
         "toc": "true",
-        "template": "template2"
+        "templateSource": "Verified",
+        "templateName": "template2"
     }
 }

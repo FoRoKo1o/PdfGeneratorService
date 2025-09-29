@@ -104,14 +104,25 @@ docker run -p 3000:3000 pdf-generator
 - `GET /test-generate-pdf`  
   Uses `sample.json` as input and returns a PDF.
 
-- `GET /templates`  
+- `POST /templates/upload`
+  Allows users to add new .odt file as template to be used to generate new .pdf file
+
+`form-data`
+```
+key: template
+value: {File.odt}
+```
+- `GET /templates/getAll`  
   Returns a list of available template names.
 ```
 {
-    "templates":
-    [
-      "template",
-      "template2"
+    "userAdded": [
+        "template.odt"
+    ],
+    "verified": [
+        "template.odt",
+        "template2.odt",
+        "templateING.odt"
     ]
 }
 ```
@@ -257,16 +268,18 @@ Below are all supported block types with example data.
 ## Options Reference
 
 ```json
-{
-  "lang": "pl",
-  "title": "My PDF Document",
-  "author": "Name to be inserted as Metadata",
-  "toc": "true / false"
-}
+"options": {
+        "lang": "pl",
+        "title": "any string - PDF file title",
+        "author": "any stryng - author name",
+        "toc": "true / false",
+        "templateSource": "Verified / UserAdded",
+        "templateName": "template2"
+    }
 ```
 
 - `lang`: string (default: "pl")
-- `title`: string (default: "Dokument")
+- `templateName`: has to be the same as the filename of `/templates/{templateSource}/{templateName}.odt`
 
 ---
 
