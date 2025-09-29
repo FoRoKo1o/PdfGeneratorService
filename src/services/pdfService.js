@@ -6,11 +6,18 @@ import { copyImagesToTmp } from "./imageService.js";
 import { jsonToPandocMarkdown } from "../utils/jsonToMarkdown.js";
 import { cleanupTmpFiles } from "./cleanupTmpFiles.js";
 import { verifyTemplate } from "../utils/verifyTemplate.js";
+import PQueue from "p-queue";
 /**
  * Generates a PDF from blocks and options, sends it via Express response.
  */
 
+const queue = new PQueue({ concurrency: 5 }); 
+
 export async function generatePdf(blocks, options, res) {
+    queue.add(() => generatePdfTask(blocks, options, res));
+}
+
+async function generatePdfTask(blocks, options, res) {
     const id = uuidv4();
     const tmpDir = path.join(process.cwd(), "tmp");
     const mdPath = path.join(tmpDir, `${id}.md`);
@@ -82,20 +89,20 @@ export async function generatePdf(blocks, options, res) {
     }
 
     // Send the PDF to the client and clean up
-    try {
-        fixedBlocks.forEach(b => {
-            if (b.type === "image") {
-                const imgPath = path.join(tmpDir, b.src);
-                // tmpFiles.push(imgPath);
-            }
-        });
+    const tmpFiles = [mdPath, odtPath, pdfPath];
+    fixedBlocks.forEach(block => {
+        if (block.type === "image" && block.src) {
+            tmpFiles.push(path.join(tmpDir, block.src));
+        }
+    });
 
+    try {
         res.download(pdfPath, "document.pdf", () => {
-            cleanupTmpFiles();
+            cleanupTmpFiles(tmpFiles);
         });
     } catch (err) {
         console.error("Error sending PDF:", err);
-        cleanupTmpFiles();
+        cleanupTmpFiles(tmpFiles);
         return res.status(500).send("Error sending PDF.");
     }
 }
